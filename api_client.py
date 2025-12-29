@@ -7,7 +7,6 @@ class AviasalesAPI:
     """Клиент для работы с API Aviasales."""
 
     def search_one_way(self, origin: str, destination: str, departure_at: str) -> dict:
-        """Поиск перелетов в одну сторону."""
         url = f"{config.API_BASE_URL}prices_for_dates"
         params = {
             "origin": origin,
@@ -22,7 +21,6 @@ class AviasalesAPI:
 
     def search_round_trip(self, origin: str, destination: str,
                           departure_at: str, return_at: str) -> dict:
-        """Поиск перелетов туда-обратно."""
         url = f"{config.API_BASE_URL}prices_for_dates"
         params = {
             "origin": origin,

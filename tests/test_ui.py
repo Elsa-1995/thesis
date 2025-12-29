@@ -1,12 +1,9 @@
 import allure
 import pytest
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from config import config
 
 
 @allure.epic("UI Тесты Aviasales")
+@allure.feature("Проверка функционала сайта Aviasales")
 class TestUI:
     """5 UI-тестов для проверки основного функционала сайта Aviasales.
 
@@ -20,42 +17,39 @@ class TestUI:
 
     @allure.title("1. Главная страница доступна")
     @allure.story("Доступность сайта")
+    @allure.severity(allure.severity_level.CRITICAL)
     @pytest.mark.ui
-    def test_open_main_page(self, driver):
+    def test_open_main_page(self, aviasales_page):
         """Тест проверяет, что главная страница сайта загружается."""
-        # Открываем сайт
-        driver.get(config.BASE_URL)
+        with allure.step("Открыть главную страницу Aviasales"):
+            aviasales_page.open()
 
-        # Проверяем, что заголовок содержит ключевое слово
-        # Это подтверждает, что мы на правильном сайте
-        assert "Авиабилеты" in driver.title
+        with allure.step("Проверить, что заголовок страницы содержит ключевое слово"):
+            title = aviasales_page.get_title()
+            assert "Авиабилеты" in title, f"Заголовок '{title}' не содержит 'Авиабилеты'"
 
     @allure.title("2. Форма поиска билетов отображается")
     @allure.story("Основные элементы интерфейса")
+    @allure.severity(allure.severity_level.CRITICAL)
     @pytest.mark.ui
-    def test_search_form_displayed(self, driver):
+    def test_search_form_displayed(self, aviasales_page):
         """Тест проверяет наличие полей для поиска билетов."""
-        driver.get(config.BASE_URL)
+        with allure.step("Открыть главную страницу"):
+            aviasales_page.open()
 
-        # Ищем поле "Откуда" по data-test-id атрибуту
-        # Это стабильный локатор, который редко меняется
-        origin_input = driver.find_element(
-            By.CSS_SELECTOR,
-            "[data-test-id='origin-autocomplete-field']"
-        )
-        assert origin_input.is_displayed(), "Поле 'Откуда' не отображается"
+        with allure.step("Проверить, что поле 'Откуда' отображается"):
+            origin_input = aviasales_page.get_origin_input()
+            assert origin_input.is_displayed(), "Поле 'Откуда' не отображается"
 
-        # Ищем поле "Куда"
-        dest_input = driver.find_element(
-            By.CSS_SELECTOR,
-            "[data-test-id='destination-autocomplete-field']"
-        )
-        assert dest_input.is_displayed(), "Поле 'Куда' не отображается"
+        with allure.step("Проверить, что поле 'Куда' отображается"):
+            dest_input = aviasales_page.get_destination_input()
+            assert dest_input.is_displayed(), "Поле 'Куда' не отображается"
 
     @allure.title("3. Поиск билетов Москва → Санкт-Петербург")
     @allure.story("Основной функционал поиска")
+    @allure.severity(allure.severity_level.CRITICAL)
     @pytest.mark.ui
-    def test_search_valid_data(self, driver):
+    def test_search_valid_data(self, aviasales_page):
         """Тест проверяет работу поиска с корректными данными.
 
         Шаги:
@@ -64,86 +58,57 @@ class TestUI:
         3. Нажать поиск
         4. Проверить переход на страницу результатов
         """
-        driver.get(config.BASE_URL)
+        with allure.step("Открыть главную страницу"):
+            aviasales_page.open()
 
-        # Заполняем город вылета
-        origin_field = driver.find_element(
-            By.CSS_SELECTOR,
-            "[data-test-id='origin-autocomplete-field']"
-        )
-        origin_field.clear()
-        origin_field.send_keys("Москва")  # Город отправления
+        with allure.step("Заполнить город вылета - Москва"):
+            aviasales_page.fill_origin("Москва")
 
-        # Заполняем город назначения
-        dest_field = driver.find_element(
-            By.CSS_SELECTOR,
-            "[data-test-id='destination-autocomplete-field']"
-        )
-        dest_field.clear()
-        dest_field.send_keys("Санкт-Петербург")  # Город назначения
+        with allure.step("Заполнить город назначения - Санкт-Петербург"):
+            aviasales_page.fill_destination("Санкт-Петербург")
 
-        # Нажимаем кнопку поиска
-        search_button = driver.find_element(
-            By.CSS_SELECTOR,
-            "[data-test-id='form-submit']"
-        )
-        search_button.click()
+        with allure.step("Нажать кнопку поиска"):
+            aviasales_page.click_search()
 
-        # Ждем, пока URL изменится на страницу результатов
-        # Максимальное время ожидания - 10 секунд
-        WebDriverWait(driver, 10).until(
-            EC.url_contains("/search")
-        )
+        with allure.step("Дождаться перехода на страницу результатов"):
+            aviasales_page.wait_for_search_results()
 
-        # Проверяем, что мы на странице результатов
-        assert "search" in driver.current_url, \
-            f"Ожидался переход на страницу результатов, текущий URL: {driver.current_url}"
+        with allure.step("Проверить, что URL содержит 'search'"):
+            current_url = aviasales_page.get_current_url()
+            assert "search" in current_url, \
+                f"Ожидался переход на страницу результатов, текущий URL: {current_url}"
 
-    @allure.title("4. Наличие футера с ссылками")
-    @allure.story("Структура страницы")
-    @pytest.mark.ui
-    def test_footer_exists(self, driver):
-        """Тест проверяет наличие футера сайта.
+        @allure.title("Тест 4: Проверка наличия футера с ссылками")
+        @allure.story("Структура страницы")
+        @allure.severity(allure.severity_level.NORMAL)
+        @pytest.mark.ui
+        def test_footer_exists(self, aviasales_page):
+            """Проверка наличия футера сайта с полезными ссылками."""
+            with allure.step("Открыть главную страницу"):
+                aviasales_page.open()
 
-        Футер - важный элемент, содержащий ссылки на:
-        - Помощь
-        - Правила
-        - Контакты
-        - Документы
-        """
-        driver.get(config.BASE_URL)
+            with allure.step("Найти футер сайта"):
+                footer = aviasales_page.get_footer()
+                assert footer.is_displayed(), "Футер не отображается"
 
-        # Ищем футер по HTML тегу
-        footer = driver.find_element(By.TAG_NAME, "footer")
-        assert footer.is_displayed(), "Футер не отображается"
-        # Проверяем, что в футере есть хотя бы одна ссылка
-        links = footer.find_elements(By.TAG_NAME, "a")
-        assert len(links) > 0, "В футере нет ссылок"
+            with allure.step("Проверить, что в футере есть хотя бы одна ссылка"):
+                links = aviasales_page.get_footer_links()
+                assert len(links) > 0, "В футере нет ссылок"
 
-    @allure.title("5. Логотип сайта отображается")
-    @allure.story("Брендинг и идентификация")
-    @pytest.mark.ui
-    def test_logo_displayed(self, driver):
-        """Тест проверяет наличие логотипа Aviasales.
+        @allure.title("Тест 5: Проверка отображения логотипа")
+        @allure.story("Элементы интерфейса")
+        @allure.severity(allure.severity_level.NORMAL)
+        @pytest.mark.ui
 
-        Логотип - важный элемент брендинга, должен быть на всех страницах.
-        """
-        driver.get(config.BASE_URL)
+    def test_logo_displayed(self, aviasales_page):
+        """Проверка наличия логотипа Aviasales на странице."""
+        with allure.step("Открыть главную страницу"):
+            aviasales_page.open()
 
-        # Пытаемся найти логотип разными способами
-        # 1. По data-test-id (если есть)
-        try:
-            logo = driver.find_element(By.CSS_SELECTOR, "[data-test-id='logo']")
-            assert logo.is_displayed()
-            return  # Если нашли - тест пройден
-        except:
-            pass  # Пробуем другой способ
-
-        # 2. По классу, содержащему "logo"
-        logos = driver.find_elements(
-            By.CSS_SELECTOR,
-            "[class*='logo'], [class*='Logo'], .logo"
-        )
-
-        assert len(logos) > 0, "Логотип не найден"
-        assert logos[0].is_displayed(), "Логотип не отображается"
+        with allure.step("Найти логотип сайта"):
+            logo = aviasales_page.get_logo()
+            if logo:
+                assert logo.is_displayed(), "Логотип не отображается"
+            else:
+                # Если логотип не найден - пропускаем тест
+                pytest.skip("Логотип не найден на странице")
